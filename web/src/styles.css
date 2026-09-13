@@ -1,0 +1,257 @@
+:root {
+  --pass: #1b7a36;
+  --pass-bg: #e9f7ee;
+  --pass-border: #7cc793;
+  --fail: #b3261e;
+  --fail-bg: #fdecea;
+  --fail-border: #e4a29c;
+  --invalid: #8a6100;
+  --invalid-bg: #fdf6e0;
+  --invalid-border: #d9c27e;
+  --ink: #1f2328;
+  --muted: #59636e;
+  --line: #d8dee4;
+  --bg: #f4f6f8;
+  --panel: #ffffff;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+.page-header h1 {
+  font-size: 24px;
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 2px rgba(27, 31, 36, 0.05);
+}
+
+.panel h2 {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+input {
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+input[aria-invalid="true"] {
+  border-color: var(--fail);
+  background: var(--fail-bg);
+}
+
+.unit { color: var(--muted); }
+
+.field-error {
+  color: var(--fail);
+  font-size: 13px;
+  margin: 6px 0 0;
+}
+
+button[type="submit"] {
+  margin-top: 16px;
+  background: #1f6feb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+button[type="submit"]:disabled {
+  background: #8fb4ef;
+  cursor: wait;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+.request-error {
+  color: var(--fail);
+  margin: 12px 0 0;
+  font-weight: 600;
+}
+
+/* 结论配色：让复核员一眼分清放行 / 不放行 / 试验无效 */
+.result-pass {
+  border-color: var(--pass-border);
+  background: var(--pass-bg);
+}
+
+.result-fail {
+  border-color: var(--fail-border);
+  background: var(--fail-bg);
+}
+
+.invalid {
+  border-color: var(--invalid-border);
+  background: var(--invalid-bg);
+}
+
+.result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.result-head h2 { margin: 0; }
+
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.badge-pass { background: var(--pass); color: #fff; }
+.badge-fail { background: var(--fail); color: #fff; }
+.badge-invalid { background: var(--invalid); color: #fff; }
+
+.readings-table,
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.readings-table caption {
+  text-align: left;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.readings-table th,
+.readings-table td,
+.history-table th,
+.history-table td {
+  border: 1px solid var(--line);
+  padding: 7px 9px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.readings-table th,
+.history-table th {
+  background: #eef1f4;
+}
+
+.steps {
+  line-height: 2;
+  padding-left: 22px;
+  margin: 10px 0;
+}
+
+.ratio-lines {
+  list-style: none;
+  padding-left: 1em;
+  margin: 2px 0;
+}
+
+[data-testid="ratio-display"] {
+  font-size: 1.08em;
+}
+
+.conclusion-text {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 10px 0 4px;
+}
+
+.record-meta {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+.invalid-message {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 8px 0;
+}
+
+.invalid-note {
+  margin: 6px 0;
+}
+
+.invalid-rule {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.placeholder {
+  color: var(--muted);
+  border-style: dashed;
+}
+
+.mini-badge {
+  border-radius: 6px;
+  padding: 2px 8px;
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.history-table tr.latest td {
+  outline: 2px solid #1f6feb;
+}
+
+.empty-history { color: var(--muted); }
+
+@media (max-width: 720px) {
+  .field-grid { grid-template-columns: 1fr; }
+}

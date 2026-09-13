@@ -1,0 +1,18 @@
+# Node / 前端
+node_modules/
+dist/
+.vite/
+test-results/
+playwright-report/
+tsconfig.tsbuildinfo
+
+# Python / 后端
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# 环境与系统
+.env
+.DS_Store
