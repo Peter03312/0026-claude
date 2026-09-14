@@ -1,8 +1,5 @@
-# 测试依赖（pytest 通过真实 uvicorn + 真实 PostgreSQL 联调）。
-# pgserver 是本地无 Docker 时的嵌入式 PostgreSQL；Compose 的 verify 服务
-# 连接栈内 postgres 服务时虽不会用到它，但安装它可让 verify 镜像保持两种模式都能跑。
--r requirements.txt
+# 本地无 Docker 时的完整测试栈：验收依赖 + 嵌入式 PostgreSQL。
+-r requirements-test.txt
 
-pytest==8.3.3
-httpx==0.27.2
+# 本地 pytest 用 pgserver 拉起嵌入式 PostgreSQL；Compose verify 连栈内 db 不装它。
 pgserver==0.1.4

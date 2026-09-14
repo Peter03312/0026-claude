@@ -95,9 +95,18 @@ docker compose --profile verify run --build verify
 
   ```bash
   cd api
-  pip install -r requirements-dev.txt   # 运行时依赖 + pytest/httpx/pgserver
+  pip install -r requirements-dev.txt   # = requirements-test + 嵌入式 PG(pgserver)
   pytest
   ```
+
+依赖文件分三个：
+- `requirements.txt`：生产运行依赖（`api` 镜像使用）；
+- `requirements-test.txt`：pytest/httpx（Compose `verify` 镜像使用，连栈内 db）；
+- `requirements-dev.txt`：在前者基础上加 `pgserver`，供本机无 Docker 时跑真实 PostgreSQL。
+
+`verify` 镜像基于 `mcr.microsoft.com/playwright:v1.48.2-jammy`，构建时会显式
+`apt-get install python3 python3-venv python3-pip`（该基础镜像不自带 Python
+venv 工具链），再创建虚拟环境安装 `requirements-test.txt`。
 
 - 前端：
 

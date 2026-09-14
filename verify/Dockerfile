@@ -3,10 +3,13 @@
 # 官方 Playwright 镜像自带 Node 20、Chromium 及系统依赖；再补 Python 3 虚拟环境。
 FROM mcr.microsoft.com/playwright:v1.48.2-jammy
 
-# 验收脚本的健康探测需要 curl（playwright 基础镜像默认不带）
+# curl：验收脚本健康探测；python3/venv/pip：Playwright jammy 基础镜像不保证
+# 自带可用的 venv 工具链（缺 python3-venv 时 `python3 -m venv` 会构建期失败）。
 USER root
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends \
+        curl ca-certificates \
+        python3 python3-venv python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PIP_NO_CACHE_DIR=1 \
@@ -15,11 +18,11 @@ ENV PIP_NO_CACHE_DIR=1 \
 
 WORKDIR /app
 
-# Python 依赖：运行时依赖 + pytest/httpx/pgserver 测试栈
-COPY api/requirements.txt api/requirements-dev.txt /app/api/
+# Python 依赖：运行时依赖 + pytest/httpx（验收连栈内 db，无需 pgserver）
+COPY api/requirements.txt api/requirements-test.txt /app/api/
 RUN python3 -m venv /opt/venv \
-    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
-    && /opt/venv/bin/pip install --no-cache-dir -r /app/api/requirements-dev.txt
+    && /opt/venv/bin/python -m pip install --upgrade pip \
+    && /opt/venv/bin/python -m pip install -r /app/api/requirements-test.txt
 ENV PATH="/opt/venv/bin:${PATH}"
 
 # 前端依赖（利用层缓存）

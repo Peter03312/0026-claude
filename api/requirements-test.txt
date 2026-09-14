@@ -1,0 +1,6 @@
+# 验收镜像所需的测试依赖：在 Compose 中连接栈内 postgres 服务跑 pytest，
+# 不需要嵌入式 PostgreSQL（pgserver 仅供本地无 Docker 模式，见 requirements-dev.txt）。
+-r requirements.txt
+
+pytest==8.3.3
+httpx==0.27.2
