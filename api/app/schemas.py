@@ -13,16 +13,16 @@ READING_MIN = Decimal("0.00")
 READING_MAX = Decimal("999.99")
 READING_MAX_DECIMAL_PLACES = 2
 
-# 只接受“普通”十进制写法：1~3 位整数 + 至多三位小数（第三位须为 0，见下方判定）。
-# 拒绝科学计数法、NaN 等。
-_READING_RE = re.compile(r"^\d{1,3}(?:\.\d{1,3})?$")
+# 只接受“普通”十进制写法：1~3 位整数 + 至多两位小数。拒绝科学计数法、NaN 等。
+_READING_RE = re.compile(r"^\d{1,3}(?:\.\d{1,2})?$")
 
 
 def _validate_reading(value: object) -> Decimal:
     """共同的读数校验：普通十进制写法、范围 0.00~999.99、至多两位小数。
 
     前端始终发字符串并逐字符保真；数字类型也可接受（其值必须落在范围内）。
-    "1.230" 这类末位为零的额外精度写法规范化后仅两位小数，予以接受。
+    超过两位小数（含 1.230 这种末位为零的写法）一律拒绝，保证页面直填与
+    直接调接口的有效性判定完全一致。
     """
     if isinstance(value, bool):
         raise ValueError("读数不能是布尔值")
@@ -44,17 +44,13 @@ def _validate_reading(value: object) -> Decimal:
             d = Decimal(value)
         except (InvalidOperation, ValueError):
             raise ValueError("读数必须是十进制数字")
+        exp = d.as_tuple().exponent
+        if isinstance(exp, int) and exp < -READING_MAX_DECIMAL_PLACES:
+            raise ValueError("读数最多保留两位小数")
     if not d.is_finite():
         raise ValueError("读数必须是有限数字")
     if d < READING_MIN or d > READING_MAX:
         raise ValueError("读数必须在 0.00 至 999.99 之间")
-    exp = d.as_tuple().exponent
-    if isinstance(exp, int) and exp < -READING_MAX_DECIMAL_PLACES:
-        # 末位为零的额外精度（如 1.230）规范化后仅两位，允许。
-        normalized = d.normalize()
-        n_exp = normalized.as_tuple().exponent
-        if not isinstance(n_exp, int) or n_exp < -READING_MAX_DECIMAL_PLACES:
-            raise ValueError("读数最多保留两位小数")
     return d
 
 

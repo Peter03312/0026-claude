@@ -95,7 +95,7 @@ docker compose --profile verify run --build verify
 
   ```bash
   cd api
-  pip install -r requirements.txt
+  pip install -r requirements-dev.txt   # 运行时依赖 + pytest/httpx/pgserver
   pytest
   ```
 

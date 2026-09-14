@@ -56,7 +56,8 @@ beforeEach(() => {
   // 这样挂载时的历史 GET 不会误吞为 POST 准备的响应。
   vi.mocked(fetch).mockImplementation(async (_url, init) => {
     const method = (init?.method ?? "GET").toUpperCase();
-    const queued = method === "POST" ? postQueue.shift() : getQueue.shift();    const body = queued?.body ?? (method === "POST" ? {} : []);
+    const queued = method === "POST" ? postQueue.shift() : getQueue.shift();
+    const body = queued?.body ?? (method === "POST" ? {} : []);
     const status = queued?.init?.status ?? (method === "POST" ? 201 : 200);
     return {
       ok: status < 400,
@@ -173,6 +174,49 @@ describe("App 判定流程（fetch 为接缝，展示与交互全真实）", () 
     await user.click(screen.getByTestId("submit-button"));
     const panel = await screen.findByTestId("result-panel");
     expect(within(panel).getByText(/#3/)).toBeInTheDocument();
+  });
+
+  it("提交在途时修改读数：旧响应返回后不得复活旧结论（输入与结论一致）", async () => {
+    const user = userEvent.setup();
+
+    // 第一次 POST 挂起，由测试在适当时机放行
+    let releasePost: (r: Response) => void = () => {};
+    const pendingPost = new Promise<Response>((resolve) => {
+      releasePost = resolve;
+    });
+    vi.mocked(fetch).mockImplementation(async (_input, init) => {
+      const method = (init?.method ?? "GET").toUpperCase();
+      if (method === "POST") {
+        return pendingPost;
+      }
+      return { ok: true, status: 200, json: async () => [] } as Response;
+    });
+
+    render(<App />);
+    await fillAll(user, "100.00", "110.00", "100.50");
+    await user.click(screen.getByTestId("submit-button"));
+
+    // 在途：按钮显示提交中，尚无结论
+    await waitFor(() => expect(screen.getByTestId("submit-button")).toBeDisabled());
+    expect(screen.queryByTestId("result-panel")).not.toBeInTheDocument();
+
+    // 检验员在响应返回前改了卸压读数（改为 109.00，接近全膨胀）
+    await user.clear(screen.getByTestId("input-released"));
+    await user.type(screen.getByTestId("input-released"), "109.00");
+
+    // 旧读数(100.50 -> PASS)的响应这时才返回
+    releasePost({
+      ok: true,
+      status: 201,
+      json: async () => passSubmission(),
+    } as Response);
+    await new Promise((res) => setTimeout(res, 50));
+
+    // 旧结论绝不能重新冒出；页面保持无结论、等待重新提交
+    expect(screen.queryByTestId("result-panel")).not.toBeInTheDocument();
+    expect(screen.getByTestId("placeholder")).toBeInTheDocument();
+    expect(screen.getByTestId("submit-button")).not.toBeDisabled();
+    expect(screen.getByTestId("input-released")).toHaveValue("109.00");
   });
 
   it("无效结论在修改读数时也立即清除", async () => {

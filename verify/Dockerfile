@@ -15,11 +15,11 @@ ENV PIP_NO_CACHE_DIR=1 \
 
 WORKDIR /app
 
-# Python 依赖（FastAPI 测试栈）
-COPY api/requirements.txt /app/api/requirements.txt
+# Python 依赖：运行时依赖 + pytest/httpx/pgserver 测试栈
+COPY api/requirements.txt api/requirements-dev.txt /app/api/
 RUN python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
-    && /opt/venv/bin/pip install --no-cache-dir -r /app/api/requirements.txt
+    && /opt/venv/bin/pip install --no-cache-dir -r /app/api/requirements-dev.txt
 ENV PATH="/opt/venv/bin:${PATH}"
 
 # 前端依赖（利用层缓存）

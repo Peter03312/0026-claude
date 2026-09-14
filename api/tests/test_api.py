@@ -154,10 +154,37 @@ def test_field_validation_422_and_not_persisted(client, i, p, r, bad_field):
     assert count(client) == before
 
 
-def test_trailing_zero_third_place_accepted(client):
-    # 1.230 规范化为 1.23，是合法两位读数
-    body = submit(client, "1.230", "11.230", "1.230").json()
-    assert body["initial"] == "1.230" or body["initial"].startswith("1.23")
+@pytest.mark.parametrize(
+    "i,p,r",
+    [
+        ("1.230", "11.230", "1.230"),   # 末位为零的三位写法仍属三位小数
+        ("0.000", "10.00", "0.00"),     # 0.000 同样拒绝
+        ("1.001", "10.00", "1.00"),     # 第三位非零
+        ("0.00", "10.000", "0.00"),     # 峰值三位
+        ("0.00", "10.00", "0.100"),     # 卸压值三位
+    ],
+)
+def test_three_decimal_places_rejected_via_api(client, i, p, r):
+    """绕过页面直接调接口也必须拒绝三位小数，保证页面与接口有效性一致。"""
+    before = count(client)
+    resp = submit(client, i, p, r)
+    assert resp.status_code == 422
+    err = resp.json()["error"]
+    assert err["code"] == "VALIDATION_ERROR"
+    assert "两位小数" in err["message"]
+    assert count(client) == before
+
+
+def test_numeric_three_decimal_places_rejected_via_api(client):
+    # JSON 数字（非字符串）的三位小数也拒绝
+    before = count(client)
+    resp = client.post(
+        "/api/submissions",
+        json={"initial": 1.234, "peak": 10, "released": 1},
+    )
+    assert resp.status_code == 422
+    assert resp.json()["error"]["fields"] == ["initial"]
+    assert count(client) == before
 
 
 def test_missing_field_422(client):

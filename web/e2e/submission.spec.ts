@@ -151,6 +151,51 @@ test.describe("真实联调：FastAPI(Decimal) + PostgreSQL + 浏览器", () => 
     await expect(rows.nth(1)).toContainText("60.00"); // 第一次提交（旧记录）
   });
 
+  test("提交在途时改读数：旧响应到达后不得复活旧结论", async ({ page }) => {
+    // 让首个 POST 被路由挂起，直到测试显式放行
+    let releaseFirst: (() => void) | null = null;
+    const firstPostHeld = new Promise<void>((r) => (releaseFirst = r));
+    let first = true;
+    await page.route("**/api/submissions", async (route) => {
+      if (route.request().method() === "POST" && first) {
+        first = false;
+        await firstPostHeld;
+      }
+      await route.continue();
+    });
+
+    await page.goto("/");
+    await fillReadings(page, { initial: "100.00", peak: "110.00", released: "100.50" });
+    await page.getByTestId("submit-button").click();
+
+    // 响应未回，无结论
+    await expect(page.getByTestId("submit-button")).toBeDisabled();
+    await expect(page.getByTestId("result-panel")).toHaveCount(0);
+
+    // 在途期间改读数 -> 立即回到无结论；放行旧响应
+    await page.getByTestId(INPUTS.released).fill("109.00");
+    await expect(page.getByTestId("result-panel")).toHaveCount(0);
+    releaseFirst!();
+
+    // 等旧响应真正落地，断言它没有把 100.50 的旧 PASS 结论带回来
+    await page.waitForResponse(
+      (r) => r.url().includes("/api/submissions") && r.request().method() === "POST",
+    );
+    await page.waitForTimeout(300);
+    await expect(page.getByTestId("result-panel")).toHaveCount(0);
+    await expect(page.getByTestId("placeholder")).toBeVisible();
+    await expect(page.getByTestId("input-released")).toHaveValue("109.00");
+
+    // 重新提交（109/110 = 90% 永久膨胀 -> 不放行），形成与当前输入一致的新结论
+    await page.unroute("**/api/submissions");
+    await page.getByTestId("submit-button").click();
+    const panel = page.getByTestId("result-panel");
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute("data-conclusion", "FAIL");
+    await expect(page.getByTestId("show-released")).toHaveText("109.00");
+    await expect(page.getByTestId("ratio-display")).toHaveText("90.0000%");
+  });
+
   test("本地形态校验：超范围/三位小数读数阻止提交且不发请求", async ({ page }) => {
     const requests: string[] = [];
     page.on("request", (req) => {
