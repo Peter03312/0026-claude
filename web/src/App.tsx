@@ -73,19 +73,13 @@ export default function App() {
 
     try {
       const saved = await submitReadings(submitted);
-      // 双保险：响应必须仍属当前序号，且其原读数与当前输入一致，才显示结论。
-      const currentInput = normalizeReadings(readings);
+      // 响应必须仍属当前序号（在途期间未被编辑作废）才显示结论。
+      // 注意：不能再拿返回值与当前输入做逐字符比较——后端读数列是
+      // NUMERIC(5,2)，"10" 会规范化成 "10.00" 返回，逐字符比较会把
+      // 正常成功误判为过期并丢弃。序号已足以防止旧响应复活。
       if (!isCurrent()) {
         // 在途期间读数被改过：旧结论不显示；记录已在库中，仅静默刷新历史。
         void refreshHistory();
-        return;
-      }
-      if (
-        saved.initial !== currentInput.initial ||
-        saved.peak !== currentInput.peak ||
-        saved.released !== currentInput.released
-      ) {
-        // 理论上不应发生（输入未变则读数相同），作为防御性丢弃。
         return;
       }
       setResult(saved);

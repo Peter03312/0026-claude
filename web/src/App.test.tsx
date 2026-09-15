@@ -105,6 +105,47 @@ describe("App 判定流程（fetch 为接缝，展示与交互全真实）", () 
     });
   });
 
+  it("无小数读数（10/20/11）：后端规范化为 10.00 返回时仍正常显示结论并解除等待", async () => {
+    const user = userEvent.setup();
+    // 后端读数列 NUMERIC(5,2)：无小数输入会以两位小数形式返回
+    queuePost(
+      passSubmission({
+        id: 7,
+        initial: "10.00",
+        peak: "20.00",
+        released: "11.00",
+        total: "10.00",
+        permanent: "1.00",
+        ratio: "10.0",
+        ratio_display: "10.0000",
+        conclusion: "PASS",
+      }),
+    );
+    render(<App />);
+
+    // 检验员输入不带小数点
+    await fillAll(user, "10", "20", "11");
+    await user.click(screen.getByTestId("submit-button"));
+
+    // 结论必须出现（回归：此前被错误的逐字符比较丢弃）
+    const panel = await screen.findByTestId("result-panel");
+    expect(panel).toHaveAttribute("data-conclusion", "PASS");
+    // 按钮解除“提交中”，页面不再等待
+    await waitFor(() => expect(screen.getByTestId("submit-button")).not.toBeDisabled());
+    // 展示后端规范化后的两位小数读数
+    expect(within(panel).getByTestId("show-initial")).toHaveTextContent("10.00");
+    expect(within(panel).getByTestId("ratio-display")).toHaveTextContent("10.0000%");
+    // 请求体保留检验员原始输入
+    const postCall = vi.mocked(fetch).mock.calls.find(
+      ([, callInit]) => (callInit?.method ?? "GET").toUpperCase() === "POST",
+    )!;
+    expect(JSON.parse(postCall[1]!.body as string)).toEqual({
+      initial: "10",
+      peak: "20",
+      released: "11",
+    });
+  });
+
   it("不放行：显示 FAIL 结论与未舍入比率", async () => {
     const user = userEvent.setup();
     queuePost(

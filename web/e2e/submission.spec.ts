@@ -64,6 +64,26 @@ test.describe("真实联调：FastAPI(Decimal) + PostgreSQL + 浏览器", () => 
     expect(saved.ratio_display).toBe("10.0000");
   });
 
+  test("不带小数点的合法读数：后端规范化后仍即时显示结论（无需刷新）", async ({ page }) => {
+    await page.goto("/");
+    // 检验员直接输入整数 mL 读数
+    await fillReadings(page, { initial: "10", peak: "20", released: "11" });
+    await page.getByTestId("submit-button").click();
+
+    const panel = page.getByTestId("result-panel");
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute("data-conclusion", "PASS");
+    // 不卡在“提交中”，无需刷新即可看到结果
+    await expect(page.getByTestId("submit-button")).toBeEnabled();
+    // 展示后端规范化的两位小数原读数与算式
+    await expect(page.getByTestId("show-initial")).toHaveText("10.00");
+    await expect(page.getByTestId("show-peak")).toHaveText("20.00");
+    await expect(page.getByTestId("show-released")).toHaveText("11.00");
+    await expect(page.getByTestId("step-total")).toHaveText("10.00 mL");
+    await expect(page.getByTestId("step-permanent")).toHaveText("1.00 mL");
+    await expect(page.getByTestId("ratio-display")).toHaveText("10.0000%");
+  });
+
   test("边界两侧：99.99mL 永久量放行(9.9991%)，100.00mL 不放行(10.0001%)", async ({ page }) => {
     await page.goto("/");
 
